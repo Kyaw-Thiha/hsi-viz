@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from scipy.io import loadmat
 import os
 import numpy as np
@@ -12,7 +12,7 @@ FILE_PATH = "data"
 
 def load_image(
     input_dir: str, select_multiple: bool = False
-) -> List[Optional[np.ndarray]]:
+) -> List[Tuple[str, Optional[np.ndarray]]]:
     """
     Interactively select one or more image files from a directory and load them.
 
@@ -29,9 +29,11 @@ def load_image(
 
     Returns
     -------
-    List[Optional[np.ndarray]]
-        A list of loaded image arrays (or None for any file that failed to load).
+    List[Tuple[str, Optional[np.ndarray]]]
+        A list of (file_path, loaded_array) pairs.
+        The array is None if the file failed to load.
         Returns an empty list if no valid files are found or selected.
+
 
     Notes
     -----
@@ -59,14 +61,17 @@ def load_image(
     if not isinstance(selected_files, list):
         selected_files = [selected_files]
 
-    loaded_images: List[Optional[np.ndarray]] = []
+    loaded_images: List[Tuple[str, Optional[np.ndarray]]] = []
     for file_path in selected_files:
+        img: Optional[np.ndarray] = None
         if file_path.endswith(".mat"):
-            loaded_images.append(load_mat(file_path))
+            img = load_mat(file_path)
         elif file_path.endswith(".npy"):
-            loaded_images.append(load_npy(file_path))
+            img = load_npy(file_path)
         elif file_path.endswith(".tif"):
-            loaded_images.append(load_tiff(file_path))
+            img = load_tiff(file_path)
+
+        loaded_images.append((file_path, img))
 
     return loaded_images
 
@@ -211,6 +216,6 @@ def choose_image_shape(img: Optional[np.ndarray]) -> Optional[np.ndarray]:
 
 
 if __name__ == "__main__":
-    print(f"Cleaning the files from {FILE_PATH}")
+    print(f"Loading the images from {FILE_PATH}")
     load_image(f"{FILE_PATH}/raw")
     print("-------------------------------------")
