@@ -3,7 +3,7 @@ from InquirerPy import inquirer
 
 from image_loader import load_image
 from image_viewer import ImageViewer
-from image_renderers import SingleBandRenderer
+from image_renderers import SingleBandRenderer, SingleAxisSliceRenderer, SinglePixelSpectrumRenderer
 
 app = typer.Typer()
 
@@ -37,6 +37,8 @@ def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
                 visualization_strategies = {
                     "spatial_monogray": ("[Spatial]: GreyScale", SingleBandRenderer("gray")),
                     "spatial_monocolor": ("[Spatial]: MonoColor", SingleBandRenderer()),
+                    "spectral_single_axis": ("[Spectral]: Single-Axis Slice", SingleAxisSliceRenderer()),
+                    "spectral_single_pixel": ("[Spectral]: Single-Pixel Spectrum", SinglePixelSpectrumRenderer()),
                     "spatial_rgb": ("[Spatial]: RGB", SingleBandRenderer()),
                 }
                 visualization_choices = [
