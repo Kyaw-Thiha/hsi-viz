@@ -52,7 +52,7 @@ def load_image(
 
     choices = [{"name": f, "value": f} for f in images]
     selected_files = inquirer.fuzzy(  # type: ignore[reportPrivateImportUsage]
-        message="Select which files you want to visualize",
+        message="Select which files you want to visualize: ",
         choices=choices,
         multiselect=select_multiple,
         # default=choices[0]["value"],
