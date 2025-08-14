@@ -4,26 +4,7 @@ import plotly.express as px
 
 from image_renderers.image_renderer import ImageRenderer
 from image_normalization import normalize_image_2d
-
-# Base colorscales
-_BASE_COLOR_SCALES = {
-    "gray": ("Grayscale", "gray"),
-    "viridis": ("Viridis (balanced, colorblind-friendly)", "viridis"),
-    "magma": ("Magma (dark-to-bright purple/orange)", "magma"),
-    "inferno": ("Inferno (fiery, high contrast)", "inferno"),
-    "plasma": ("Plasma (purple→yellow)", "plasma"),
-    "cividis": ("Cividis (perceptually uniform, CVD-friendly)", "cividis"),
-    "ice": ("Ice (cool blues)", "ice"),
-    "thermal": ("Thermal (cool→hot)", "thermal"),
-    "aggrnyl": ("Aggrnyl (aqua→green)", "aggrnyl"),
-    "sunset": ("Sunset (pink→orange)", "sunset"),
-}
-
-# Expanded with inverted versions
-COLOR_SCALES = {}
-for key, (label, scale) in _BASE_COLOR_SCALES.items():
-    COLOR_SCALES[key] = (label, scale)
-    COLOR_SCALES[key + "_inv"] = (label + " (Inverted)", scale + "_r")
+from utils.monocolor_picker import pick_mono_color
 
 
 class SingleBandRenderer(ImageRenderer):
@@ -40,15 +21,10 @@ class SingleBandRenderer(ImageRenderer):
             choices=band_choices,
         ).execute()
 
-        # --- Pick palette ---
+        # --- Pick color palette ---
         color_choice = "gray"
         if self.color == "":
-            color_choices = [{"name": label, "value": key} for key, (label, _) in COLOR_SCALES.items()]
-            color_choice = inquirer.select(  # type: ignore[reportPrivateImportUsage]
-                message="Select a monochrome/gradient palette:",
-                choices=color_choices,
-                default="gray",
-            ).execute()
+            color_choice = pick_mono_color()
 
         # --- Render the image ---
         image = image[:, :, band_choice]
