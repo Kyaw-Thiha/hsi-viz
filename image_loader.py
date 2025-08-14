@@ -10,9 +10,7 @@ from InquirerPy import inquirer
 FILE_PATH = "data"
 
 
-def load_image(
-    input_dir: str, select_multiple: bool = False
-) -> List[Tuple[str, Optional[np.ndarray]]]:
+def load_image(input_dir: str, select_multiple: bool = False) -> List[Tuple[str, Optional[np.ndarray]]]:
     """
     Interactively select one or more image files from a directory and load them.
 
@@ -52,7 +50,7 @@ def load_image(
 
     choices = [{"name": f, "value": f} for f in images]
     selected_files = inquirer.fuzzy(  # type: ignore[reportPrivateImportUsage]
-        message="Select which files you want to visualize: ",
+        message="Press [TAB] to select, and [ENTER] to confirm. \nSelect which files you want to load: ",
         choices=choices,
         multiselect=select_multiple,
         # default=choices[0]["value"],
@@ -209,9 +207,7 @@ def choose_image_shape(img: Optional[np.ndarray]) -> Optional[np.ndarray]:
     if order is not None:
         img = img.transpose(order)
 
-    print(
-        f"[✅] Image transposed from ({', '.join(format_choice.upper())}) to (H, W, C) with shape {img.shape}"
-    )
+    print(f"[✅] Image transposed from ({', '.join(format_choice.upper())}) to (H, W, C) with shape {img.shape}")
     return img
 
 

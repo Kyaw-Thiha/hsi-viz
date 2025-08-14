@@ -18,7 +18,7 @@ def viz_three():
 
 @app.command()
 def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
-    loaded_images = load_image(input_dir)
+    loaded_images = load_image(input_dir, select_multiple=True)
 
     while True:
         image_choices = [{"name": img[0], "value": img[0]} for img in loaded_images]
