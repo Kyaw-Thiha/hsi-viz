@@ -2,8 +2,11 @@ click==8.2.1
 inquirerpy==0.3.4
 markdown-it-py==4.0.0
 mdurl==0.1.2
+narwhals==2.1.1
 numpy==2.3.2
+packaging==25.0
 pfzy==0.3.4
+plotly==6.3.0
 prompt_toolkit==3.0.51
 Pygments==2.19.2
 rich==14.1.0
