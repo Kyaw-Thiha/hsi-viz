@@ -2,8 +2,8 @@ import typer
 from InquirerPy import inquirer
 
 from image_loader import load_image
-from image_viewer import ImageViewer, SingleBandRenderer
-import image_viewer
+from image_viewer import ImageViewer
+from image_renderers import SingleBandRenderer
 
 app = typer.Typer()
 
@@ -20,16 +20,6 @@ def viz_three():
 def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
     loaded_images = load_image(input_dir)
 
-    color_action = inquirer.select(  # type: ignore[reportPrivateImportUsage]
-        message="Select how you to visualize the 2D Image:",
-        choices=[
-            {"name": "RGB", "value": "rgb"},
-            {"name": "BW", "value": "bw"},
-            {"name": "Exit", "value": None},
-        ],
-        default="rgb",
-    ).execute()
-
     while True:
         image_choices = [{"name": img[0], "value": img[0]} for img in loaded_images]
         image_choices.append({"name": "Exit", "value": ""})
@@ -45,7 +35,7 @@ def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
             image_name, image = image_tuple
             if image is not None:
                 visualization_strategies = {
-                    "spatial_monogray": ("[Spatial]: GreyScale", SingleBandRenderer()),
+                    "spatial_monogray": ("[Spatial]: GreyScale", SingleBandRenderer("gray")),
                     "spatial_monocolor": ("[Spatial]: MonoColor", SingleBandRenderer()),
                     "spatial_rgb": ("[Spatial]: RGB", SingleBandRenderer()),
                 }
