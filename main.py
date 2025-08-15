@@ -1,3 +1,4 @@
+import os
 import typer
 import numpy as np
 from InquirerPy import inquirer
@@ -73,6 +74,7 @@ def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
                 default="",
             ).execute()
             if save_choice != "" and fig is not None:
+                os.makedirs("output", exist_ok=True)
                 default_save_name = f"{output_dir}/plot.{save_choice}"
                 save_name: str = inquirer.text(message="Enter the filename to save as:", default=default_save_name).execute()  # type: ignore[reportPrivateImportUsage]
                 if save_choice == "html":
