@@ -1,10 +1,11 @@
+from typing import List, Tuple
 import numpy as np
 from InquirerPy import inquirer
+
 import plotly.express as px
+import plotly.graph_objects as go
 
 from image_renderers.image_renderer import ImageRenderer
-from image_normalization import normalize_image_2d
-from utils.monocolor_picker import pick_mono_color
 
 
 class SinglePixelSpectrumRenderer(ImageRenderer):
@@ -15,12 +16,26 @@ class SinglePixelSpectrumRenderer(ImageRenderer):
     def __init__(self) -> None:
         pass
 
-    def render(self, image: np.ndarray, image_name: str, output_dir: str):
-        H, W, B = image.shape
+    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str):
+        if not images:
+            raise ValueError("No images provided.")
 
-        # --- Pick pixel ---
-        row_choices = [{"name": f"row y = {i}", "value": i} for i in range(H)]
-        col_choices = [{"name": f"col x = {i}", "value": i} for i in range(W)]
+        # --- Validate and compute common index ranges ---
+        Hs, Ws, Bs = [], [], []
+        for name, img in images:
+            if img.ndim != 3:
+                raise ValueError(f"{name} must be a 3D array (H, W, B); got {img.shape}")
+            Hs.append(img.shape[0])
+            Ws.append(img.shape[1])
+            Bs.append(img.shape[2])
+
+        common_H = min(Hs)  # rows available in all images: [0..common_H-1]
+        common_W = min(Ws)  # cols available in all images: [0..common_W-1]
+        common_B = min(Bs)  # bands available in all images: [0..common_B-1]
+
+        # --- Pick pixel (indices guaranteed to exist in every image) ---
+        row_choices = [{"name": f"row y = {i}", "value": i} for i in range(common_H)]
+        col_choices = [{"name": f"col x = {i}", "value": i} for i in range(common_W)]
 
         y = inquirer.fuzzy(  # type: ignore[reportPrivateImportUsage]
             message="Pick row (y):",
@@ -31,38 +46,46 @@ class SinglePixelSpectrumRenderer(ImageRenderer):
             choices=col_choices,
         ).execute()
 
-        # --- Extract spectrum and normalize to [0,1] for visualization ---
-        spectrum = image[y, x, :].astype(np.float64)
-        smin, smax = float(spectrum.min()), float(spectrum.max())
-        spectrum_vis = (spectrum - smin) / (smax - smin + 1e-12)
-
-        # Optional smoothing toggle
+        # --- Optional smoothing toggle ---
         smooth = inquirer.select(  # type: ignore[reportPrivateImportUsage]
             message="Apply light smoothing to spectrum?",
             choices=[{"name": "No", "value": False}, {"name": "Yes", "value": True}],
             default=False,
         ).execute()
-        if smooth and B >= 5:
-            # simple 5-point moving average (edges padded)
-            k = 5
-            pad = k // 2
-            padded = np.pad(spectrum_vis, (pad, pad), mode="edge")
-            spectrum_vis = np.convolve(padded, np.ones(k) / k, mode="valid")
+        k = 5
+        kernel = np.ones(k) / k
+        pad = k // 2
 
-        # --- Plot spectrum ---
-        bands = np.arange(1, B + 1)
-        fig = px.line(
-            x=bands,
-            y=spectrum_vis,
-            labels={"x": "band", "y": "normalized intensity"},
-            title=f"Spectrum at (x={x}, y={y}) • {image_name}",
+        # --- Build figure with one trace per image ---
+        bands = np.arange(1, common_B + 1)
+        fig = go.Figure()
+        for image_name, image in images:
+            spectrum = image[y, x, :common_B].astype(np.float64)  # align bands
+            smin, smax = float(spectrum.min()), float(spectrum.max())
+            if smax == smin:
+                spectrum_vis = np.zeros_like(spectrum, dtype=np.float64)
+            else:
+                spectrum_vis = (spectrum - smin) / (smax - smin)
+
+            if smooth and common_B >= k:
+                padded = np.pad(spectrum_vis, (pad, pad), mode="edge")
+                spectrum_vis = np.convolve(padded, kernel, mode="valid")
+
+            fig.add_trace(
+                go.Scatter(
+                    x=bands,
+                    y=spectrum_vis,
+                    mode="lines",
+                    name=image_name,
+                    fill="tozeroy",
+                    line=dict(width=2),
+                )
+            )
+
+        fig.update_layout(
+            title=f"Spectrum at (x={x}, y={y})",
+            xaxis_title="band",
+            yaxis_title="normalized intensity",
         )
-        # fig.update_traces(mode="lines+markers")
-        fig.update_traces(
-            mode="lines",  # just line, no markers
-            fill="tozeroy",  # fill down to y=0
-            line=dict(color="royalblue", width=2),
-            fillcolor="rgba(65,105,225,0.4)",  # semi-transparent royal blue
-        )
-        fig.update_xaxes(dtick=max(1, B // 16))
+        fig.update_xaxes(dtick=max(1, common_B // 16))
         fig.show()

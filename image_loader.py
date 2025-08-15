@@ -53,7 +53,6 @@ def load_image(input_dir: str, select_multiple: bool = False) -> List[Tuple[str,
         message="Press [TAB] to select, and [ENTER] to confirm. \nSelect which files you want to load: ",
         choices=choices,
         multiselect=select_multiple,
-        # default=choices[0]["value"],
     ).execute()
 
     if not isinstance(selected_files, list):

@@ -1,9 +1,13 @@
+from typing import List, Tuple, Literal
 import numpy as np
 from InquirerPy import inquirer
 import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
 
 from image_renderers.image_renderer import ImageRenderer
-from image_normalization import normalize_image_2d
+from utils.image_normalization import normalize_images_2d
 from utils.monocolor_picker import pick_mono_color
 
 
@@ -22,57 +26,94 @@ class SingleAxisSliceRenderer(ImageRenderer):
         self.axis = axis
         self.color = color
 
-    def render(self, image: np.ndarray, image_name: str, output_dir: str):
-        H, W, B = image.shape
+    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str):
+        if not images:
+            raise ValueError("No images provided.")
 
-        # --- Choose axis (optional, if you want to override at runtime) ---
-        axis_choice = self.axis
+        # --- Validate & find common spatial index ranges across all images ---
+        Hs, Ws, Bs = [], [], []
+        for name, img in images:
+            if img.ndim != 3:
+                raise ValueError(f"{name} must be a 3D array (H, W, B); got {img.shape}")
+            Hs.append(img.shape[0])
+            Ws.append(img.shape[1])
+            Bs.append(img.shape[2])
+
+        common_H = min(Hs)  # indices [0..common_H-1] exist in all images (rows)
+        common_W = min(Ws)  # indices [0..common_W-1] exist in all images (cols)
+
+        # --- Choose axis ---
         axis_choice = inquirer.select(  # type: ignore[reportPrivateImportUsage]
             message="Slice along which axis?",
-            choices=[{"name": "x (fix column)", "value": "x"}, {"name": "y (fix row)", "value": "y"}],
+            choices=[
+                {"name": "x (fix column)", "value": "x"},
+                {"name": "y (fix row)", "value": "y"},
+            ],
             default=self.axis,
         ).execute()
 
-        # --- Choose index along that axis ---
+        # --- Choose index guaranteed to exist in ALL images ---
         if axis_choice == "x":
-            idx_choices = [{"name": f"x = {i}", "value": i} for i in range(W)]
+            idx_choices = [{"name": f"x = {i}", "value": i} for i in range(common_W)]
             idx = inquirer.fuzzy(  # type: ignore[reportPrivateImportUsage]
-                message="Pick column index (x):",
-                choices=idx_choices,
+                message="Pick column index (x):", choices=idx_choices
             ).execute()
-            # Slice: (H, B)
-            slice_2d = image[:, idx, :]
-            y_label = "row (y)"
-            x_label = "band"
+            x_label, y_label = "band", "row (y)"
         else:
-            idx_choices = [{"name": f"y = {i}", "value": i} for i in range(H)]
+            idx_choices = [{"name": f"y = {i}", "value": i} for i in range(common_H)]
             idx = inquirer.fuzzy(  # type: ignore[reportPrivateImportUsage]
-                message="Pick row index (y):",
-                choices=idx_choices,
+                message="Pick row index (y):", choices=idx_choices
             ).execute()
-            # Slice: (W, B)
-            slice_2d = image[idx, :, :]
-            y_label = "column (x)"
-            x_label = "band"
+            x_label, y_label = "band", "column (x)"
 
         # --- Pick palette ---
-        color_choice = "gray"
-        if self.color == "":
-            color_choice = pick_mono_color()
+        color_choice = self.color or pick_mono_color()
 
-        # --- Normalize per-slice (across the 2D array) ---
-        slice_2d = normalize_image_2d(slice_2d)
+        # --- Build 2D slices from all images (each shape: (pos, B)) ---
+        slices: List[Tuple[str, np.ndarray]] = []
+        for name, img in images:
+            if axis_choice == "x":
+                sl = img[:, idx, :]  # (H, B)
+            else:
+                sl = img[idx, :, :]  # (W, B)
+            # Convert to float32 for normalization downstream
+            slices.append((name, sl.astype(np.float32, copy=False)))
 
-        # --- Render heatmap (position vs. wavelength) ---
-        # x-axis := band index 1..B, y-axis := spatial index
-        fig = px.imshow(
-            slice_2d,
-            color_continuous_scale=color_choice,
-            origin="upper",
-            title=f"{'Column' if axis_choice == 'x' else 'Row'}-{idx} • {image_name}",
-            aspect="auto",
+        # --- Normalize globally across all slices for fair comparison ---
+        # normalize_images_2d expects List[(name, 2D array)] and returns same structure
+        norm_slices = normalize_images_2d(slices, method="percentile")
+
+        # --- Plot all on one page using subplots ---
+        n = len(norm_slices)
+        cols = min(n, 3)  # up to 3 per row (tweak as you like)
+        rows = (n + cols - 1) // cols
+
+        fig = make_subplots(
+            rows=rows,
+            cols=cols,
+            subplot_titles=[f"{'Column' if axis_choice == 'x' else 'Row'}-{idx} • {name}" for name, _ in norm_slices],
         )
-        fig.update_coloraxes(showscale=True)
-        fig.update_xaxes(title_text=x_label, showticklabels=True)
-        fig.update_yaxes(title_text=y_label, showticklabels=True)
+
+        for i, (name, sl2d) in enumerate(norm_slices):
+            # Ensure 2D array is (pos, band); plotly's Image accepts 2D z
+            row = (i // cols) + 1
+            col = (i % cols) + 1
+            fig.add_trace(go.Heatmap(z=sl2d, coloraxis="coloraxis", zmin=0.0, zmax=1.0), row=row, col=col)
+
+        # Hide ticks (they’re not meaningful for raw indices)
+        fig.update_xaxes(showticklabels=False)
+        fig.update_yaxes(showticklabels=False)
+
+        # Apply a single continuous color scale name to all traces
+        # (go.Image does not take color scales like px.imshow; it auto-maps grayscale.)
+        # If you need a specific mono palette, convert sl2d to RGB yourself or use Heatmap:
+        # fig.add_trace(go.Heatmap(z=sl2d, colorscale=color_choice), ...)
+
+        fig.update_layout(
+            height=max(320 * rows, 400),
+            width=max(320 * cols, 500),
+            title_text=f"Slices at {('x' if axis_choice == 'x' else 'y')}={idx} (normalized globally)",
+            coloraxis=dict(colorscale=color_choice, cmin=0.0, cmax=1.0, colorbar=dict(title="Normalized intensity")),
+        )
+
         fig.show()

@@ -1,6 +1,7 @@
+from typing import List, Tuple
 import numpy as np
 
 
 class ImageRenderer:
-    def render(self, image: np.ndarray, image_name: str, output_dir: str):
+    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str):
         pass

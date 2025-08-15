@@ -1,25 +1,25 @@
+from typing import List, Tuple
 import numpy as np
 
-from image_normalization import normalize_image_3d
+from utils.image_normalization import normalize_images_3d
 from image_renderers import ImageRenderer
 
 
 class ImageViewer:
     renderer: ImageRenderer
-    image: np.ndarray
-    image_name: str
+    images: List[Tuple[str, np.ndarray]]
     output_dir: str
 
-    def __init__(self, renderer: ImageRenderer, image: np.ndarray, image_name: str, output_dir: str) -> None:
-        assert image.ndim == 3, f"The image is not 3 dimensional, and instead is of shape: {image.shape}"
+    def __init__(self, renderer: ImageRenderer, images: List[Tuple[str, np.ndarray]], output_dir: str) -> None:
+        for image_name, image in images:
+            assert image.ndim == 3, f"{image_name} is not 3 dimensional, and instead is of shape: {image.shape}"
 
         self.renderer = renderer
-        self.image = normalize_image_3d(image)
-        self.image_name = image_name
+        self.images = images
         self.output_dir = output_dir
 
     def set_renderer(self, renderer: ImageRenderer):
         self.renderer = renderer
 
     def render(self):
-        self.renderer.render(self.image, self.image_name, self.output_dir)
+        self.renderer.render(self.images, self.output_dir)

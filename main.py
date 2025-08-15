@@ -1,4 +1,5 @@
 import typer
+import numpy as np
 from InquirerPy import inquirer
 
 from image_loader import load_image
@@ -23,37 +24,39 @@ def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
     while True:
         image_choices = [{"name": img[0], "value": img[0]} for img in loaded_images]
         image_choices.append({"name": "Exit", "value": ""})
-        image_choice = inquirer.select(  # type: ignore[reportPrivateImportUsage]
-            message="Select which image you want to visualize:",
+        chosen_images = inquirer.checkbox(  # type: ignore[reportPrivateImportUsage]
+            message="Press [TAB] to select and [ENTER] to confirm. \nSelect which images you want to visualize:",
             choices=image_choices,
+            default=image_choices[0]["value"],
         ).execute()
 
-        if image_choice == "":
+        if "" in chosen_images:
             break
-        image_tuple = next((t for t in loaded_images if t[0] == image_choice), None)
-        if image_tuple is not None:
-            image_name, image = image_tuple
-            if image is not None:
-                visualization_strategies = {
-                    "spatial_monogray": ("[Spatial]: GreyScale", SingleBandRenderer("gray")),
-                    "spatial_monocolor": ("[Spatial]: MonoColor", SingleBandRenderer()),
-                    "spectral_single_axis": ("[Spectral]: Single-Axis Slice", SingleAxisSliceRenderer()),
-                    "spectral_single_pixel": ("[Spectral]: Single-Pixel Spectrum", SinglePixelSpectrumRenderer()),
-                    "spatial_rgb": ("[Spatial]: RGB", SingleBandRenderer()),
-                }
-                visualization_choices = [
-                    {"name": label, "value": key} for key, (label, _factory) in visualization_strategies.items()
-                ]
-                visualization_choice = inquirer.fuzzy(  # type: ignore[reportPrivateImportUsage]
-                    message="Select what strategy you want to use to visualize: ",
-                    choices=visualization_choices,
-                ).execute()
+        if len(chosen_images) == 0:
+            print("Select an image by pressing [TAB].")
+            continue
 
-                stratgy = visualization_strategies.get(visualization_choice)
-                if stratgy is not None:
-                    strategy_name, renderer = stratgy
-                    image_viewer = ImageViewer(renderer, image, image_name, output_dir)
-                    image_viewer.render()
+        image_tuples = [t for t in loaded_images if t[0] in chosen_images]
+        images: list[tuple[str, np.ndarray]] = [(name, arr) for name, arr in image_tuples if arr is not None]
+
+        visualization_strategies = {
+            "spatial_monogray": ("[Spatial]: GreyScale", SingleBandRenderer("gray")),
+            "spatial_monocolor": ("[Spatial]: MonoColor", SingleBandRenderer()),
+            "spectral_single_axis": ("[Spectral]: Single-Axis Slice", SingleAxisSliceRenderer()),
+            "spectral_single_pixel": ("[Spectral]: Single-Pixel Spectrum", SinglePixelSpectrumRenderer()),
+            "spatial_rgb": ("[Spatial]: RGB", SingleBandRenderer()),
+        }
+        visualization_choices = [{"name": label, "value": key} for key, (label, _factory) in visualization_strategies.items()]
+        visualization_choice = inquirer.fuzzy(  # type: ignore[reportPrivateImportUsage]
+            message="Select what strategy you want to use to visualize: ",
+            choices=visualization_choices,
+        ).execute()
+
+        stratgy = visualization_strategies.get(visualization_choice)
+        if stratgy is not None:
+            strategy_name, renderer = stratgy
+            image_viewer = ImageViewer(renderer, images, output_dir)
+            image_viewer.render()
 
 
 if __name__ == "__main__":
