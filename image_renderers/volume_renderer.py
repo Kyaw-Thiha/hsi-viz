@@ -29,7 +29,6 @@ class VolumeRenderer(ImageRenderer):
     min_height: int
 
     # Debugging Options
-    renderer: Optional[str]
     save_html: Optional[str]
     debug: bool
 
@@ -48,12 +47,11 @@ class VolumeRenderer(ImageRenderer):
         norm: Literal["percentile", "min-max"] = "percentile",
         surface_count: int = 8,
         opacity: float = 0.25,
-        colorscale: Optional[str] = "Viridis",
+        color: Optional[str] = "",
         caps: Optional[Dict[str, Any]] = None,  # e.g. dict(x_show=False, y_show=False, z_show=False)
         figure_height_per_row: int = 420,
         figure_width: int = 900,
         min_height: int = 800,
-        renderer: Optional[str] = None,  # e.g. "browser", "notebook_connected", "vscode"
         save_html: Optional[str] = None,  # e.g. "volume_debug.html"
         debug: bool = False,
         # Downsampling controls
@@ -67,12 +65,11 @@ class VolumeRenderer(ImageRenderer):
         self.norm = norm
         self.surface_count = surface_count
         self.opacity = opacity
-        self.colorscale = colorscale
+        self.color = color
         self.caps = caps if caps is not None else dict(x_show=False, y_show=False, z_show=False)
         self.figure_height_per_row = figure_height_per_row
         self.figure_width = figure_width
         self.min_height = min_height
-        self.renderer = renderer
         self.save_html = save_html
         self.debug = debug
         self.max_voxels = int(max_voxels)
@@ -167,20 +164,19 @@ class VolumeRenderer(ImageRenderer):
             if img is None or img.ndim != 3:
                 raise ValueError(f"{img_name} must be a 3D array (H,W,B); got {None if img is None else img.shape}")
 
+        # --- Pick color palette ---
+        color_choice = self.color or pick_mono_color()
+
         common_H = min(img.shape[0] for _, img in images)
         common_W = min(img.shape[1] for _, img in images)
         common_B = min(img.shape[2] for _, img in images)
 
+        # --- Crop and normalize the image ---
         def _crop(img: np.ndarray) -> np.ndarray:
             return img[:common_H, :common_W, :common_B]
 
         cropped_images = [(name, _crop(img)) for name, img in images]
         normalized_images = normalize_images_3d(cropped_images, self.norm)
-
-        if self.renderer is not None:
-            import plotly.io as pio
-
-            pio.renderers.default = self.renderer
 
         rows = []
         for name, vol_hwb in normalized_images:
@@ -194,6 +190,7 @@ class VolumeRenderer(ImageRenderer):
                 if self.debug:
                     print(f"{name}: Found non-finite values → replaced with finite numbers")
 
+            # --- Downsampling the image ---
             vol_bhw_ds, strides = self._downsample(vol_bhw)
             if self.debug:
                 B, H, W = vol_bhw.shape
@@ -202,11 +199,12 @@ class VolumeRenderer(ImageRenderer):
                     f"{name}: downsample strides (sB,sH,sW)={strides}, size {B}x{H}x{W} → {Bd}x{Hd}x{Wd} (vox={Bd * Hd * Wd:,})"
                 )
 
-            # Auto iso bounds (percentiles; optionally ignore zeros)
+            # --- Auto iso bounds ---
             iso_min, iso_max, dbg = self._auto_iso_bounds(vol_bhw_ds)
             if self.debug:
                 print(f"{name}: iso_min={iso_min:.4f}, iso_max={iso_max:.4f}, zero_frac={dbg.get('zero_frac', float('nan')):.3f}")
 
+            # --- Adding the volume into the plot ---
             row = build_volume_row(
                 name=name,
                 vol=vol_bhw_ds,
@@ -214,7 +212,7 @@ class VolumeRenderer(ImageRenderer):
                 isomax=iso_max,
                 surface_count=max(1, self.surface_count),
                 caps=self.caps,
-                colorscale=self.colorscale,
+                colorscale=color_choice,
             )
             for tr in row.traces:
                 if isinstance(tr, go.Volume):
