@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from plot.trace_spec import TraceSpec
+from plot.rich_plot_progress import patch_plotly_show
 
 
 def assemble_linked_figure(
@@ -29,6 +30,8 @@ def assemble_linked_figure(
     Note: Plotly does NOT support true unified hover across 3D 'scene' subplots.
     We instead synchronize camera and axis ranges for a consistent experience.
     """
+    patch_plotly_show(description="Opening Plotly figure…", ui="bar", bar_cycle_time=2.0, bar_steps=100, refresh_interval=0.05)
+
     n = len(rows)
     cols = 1 if one_column else 2  # easy extension later
 
