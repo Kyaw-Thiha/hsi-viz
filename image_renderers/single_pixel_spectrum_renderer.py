@@ -113,6 +113,4 @@ class SinglePixelSpectrumRenderer(ImageRenderer):
 
         fig.update_layout(title=f"Spectrum at (x={x}, y={y})")
 
-        fig.show()
-
         return fig

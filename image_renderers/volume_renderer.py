@@ -235,5 +235,4 @@ class VolumeRenderer(ImageRenderer):
             if self.debug:
                 print(f"Saved volume figure to: {self.save_html}")
 
-        fig.show()
         return fig

@@ -19,7 +19,7 @@ def viz_three():
 
 
 @app.command()
-def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
+def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR, show_fig: bool = True):
     loaded_images = load_image(input_dir, select_multiple=True)
     print("\n")
 
@@ -60,6 +60,8 @@ def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
             strategy_name, renderer = stratgy
             image_viewer = ImageViewer(renderer, images, output_dir)
             fig = image_viewer.render()
+            if show_fig and fig is not None:
+                fig.show()
 
             save_choices = [
                 {"name": "JPG", "value": "jpg"},

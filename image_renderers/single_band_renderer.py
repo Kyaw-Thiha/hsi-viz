@@ -82,6 +82,4 @@ class SingleBandRenderer(ImageRenderer):
         fig.update_xaxes(showticklabels=False)
         fig.update_yaxes(showticklabels=False)
 
-        fig.show()
-
         return fig

@@ -117,6 +117,4 @@ class SingleAxisSliceRenderer(ImageRenderer):
         # Optional: figure-level title
         fig.update_layout(title_text=f"Slices at {('x' if axis_choice == 'x' else 'y')}={idx} (normalized globally)")
 
-        fig.show()
-
         return fig
