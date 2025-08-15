@@ -1,6 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 from InquirerPy import inquirer
+from plotly.graph_objects import Figure
 
 
 from image_renderers.image_renderer import ImageRenderer
@@ -24,7 +25,7 @@ class SingleAxisSliceRenderer(ImageRenderer):
         self.axis = axis
         self.color = color
 
-    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str):
+    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str) -> Figure:
         if not images:
             raise ValueError("No images provided.")
 
@@ -117,3 +118,5 @@ class SingleAxisSliceRenderer(ImageRenderer):
         fig.update_layout(title_text=f"Slices at {('x' if axis_choice == 'x' else 'y')}={idx} (normalized globally)")
 
         fig.show()
+
+        return fig

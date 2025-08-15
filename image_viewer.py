@@ -22,4 +22,4 @@ class ImageViewer:
         self.renderer = renderer
 
     def render(self):
-        self.renderer.render(self.images, self.output_dir)
+        return self.renderer.render(self.images, self.output_dir)

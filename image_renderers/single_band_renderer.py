@@ -1,9 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 from InquirerPy import inquirer
-
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+from plotly.graph_objects import Figure
 
 from image_renderers.image_renderer import ImageRenderer
 from utils.image_normalization import normalize_images_2d
@@ -17,7 +15,7 @@ class SingleBandRenderer(ImageRenderer):
     def __init__(self, color: str = "") -> None:
         self.color = color
 
-    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str):
+    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str) -> Figure:
         # --- Validate inputs ---
         for img_name, img in images:
             if img is None or img.ndim != 3:
@@ -85,3 +83,5 @@ class SingleBandRenderer(ImageRenderer):
         fig.update_yaxes(showticklabels=False)
 
         fig.show()
+
+        return fig

@@ -1,6 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 from InquirerPy import inquirer
+from plotly.graph_objects import Figure
 
 
 from image_renderers.image_renderer import ImageRenderer
@@ -33,7 +34,7 @@ class SinglePixelSpectrumRenderer(ImageRenderer):
     def __init__(self) -> None:
         pass
 
-    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str):
+    def render(self, images: List[Tuple[str, np.ndarray]], output_dir: str) -> Figure:
         if not images:
             raise ValueError("No images provided.")
 
@@ -113,3 +114,5 @@ class SinglePixelSpectrumRenderer(ImageRenderer):
         fig.update_layout(title=f"Spectrum at (x={x}, y={y})")
 
         fig.show()
+
+        return fig
