@@ -2,3 +2,4 @@ from image_renderers.single_band_renderer import SingleBandRenderer
 from image_renderers.image_renderer import ImageRenderer
 from image_renderers.single_axis_slice_renderer import SingleAxisSliceRenderer
 from image_renderers.single_pixel_spectrum_renderer import SinglePixelSpectrumRenderer
+from image_renderers.volume_renderer import VolumeRenderer

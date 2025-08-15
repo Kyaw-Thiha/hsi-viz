@@ -5,7 +5,7 @@ from InquirerPy import inquirer
 
 from image_loader import load_image
 from image_viewer import ImageViewer
-from image_renderers import SingleBandRenderer, SingleAxisSliceRenderer, SinglePixelSpectrumRenderer
+from image_renderers import SingleBandRenderer, SingleAxisSliceRenderer, SinglePixelSpectrumRenderer, VolumeRenderer
 
 app = typer.Typer()
 
@@ -46,6 +46,7 @@ def viz_two(input_dir: str = INPUT_DIR, output_dir: str = OUTPUT_DIR):
             "spatial_monocolor": ("[Spatial]: MonoColor", SingleBandRenderer()),
             "spectral_single_axis": ("[Spectral]: Single-Axis Slice", SingleAxisSliceRenderer()),
             "spectral_single_pixel": ("[Spectral]: Single-Pixel Spectrum", SinglePixelSpectrumRenderer()),
+            "3d_cube": ("[3D]: Cube", VolumeRenderer(max_voxels=500_000, debug=True)),
             "spatial_rgb": ("[Spatial]: RGB", SingleBandRenderer()),
         }
         visualization_choices = [{"name": label, "value": key} for key, (label, _factory) in visualization_strategies.items()]
