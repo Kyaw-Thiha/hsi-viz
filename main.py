@@ -13,9 +13,9 @@ INPUT_DIR = "input"
 OUTPUT_DIR = "output"
 
 
-@app.command()
-def viz_three():
-    pass
+# @app.command()
+# def viz_three():
+#     pass
 
 
 @app.command()
