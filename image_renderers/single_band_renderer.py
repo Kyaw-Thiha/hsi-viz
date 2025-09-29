@@ -44,7 +44,22 @@ class SingleBandRenderer(ImageRenderer):
 
         # --- Normalize (2D bands) ---
         # to_plot_norm: List[(name, norm_img)], in [0,1]
-        to_plot_norm = normalize_images_2d(selected_bands, "percentile")
+        normalization_choice = inquirer.select(  # type: ignore[reportPrivateImportUsage]
+            message="Do you want to normalize the images individually, or all together?",
+            choices=[
+                {"name": "Normalize individual images separately", "value": "individual"},
+                {"name": "Normalize all images together", "value": "all"},
+            ],
+            default="individual",
+        ).execute()
+
+        to_plot_norm = []
+        if normalization_choice == "individual":
+            for band in selected_bands:
+                normalized_image = normalize_images_2d([band], "percentile")
+                to_plot_norm.append(normalized_image[0])
+        else:
+            to_plot_norm = normalize_images_2d(selected_bands, "percentile")
         to_plot_orig = selected_bands  # same order
 
         # --- Build renderer-agnostic rows (one heatmap row per image) ---
