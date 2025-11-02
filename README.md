@@ -9,8 +9,14 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-Run the program
+Run the visualization program
 ```bash
-python -m main
+python -m main viz
 ```
+
+Run reshaping
+```bash
+python -m main reshape
+```
+
 

@@ -177,7 +177,7 @@ def choose_image_shape(img: Optional[np.ndarray]) -> Optional[np.ndarray]:
 
     # Mapping from choice value -> H, W, C
     transpose_map = {
-        "hwc": None,
+        "hwc": (0, 1, 2),
         "chw": (1, 2, 0),
         "wch": (2, 0, 1),
         "hcw": (0, 2, 1),
